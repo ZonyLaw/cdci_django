@@ -1,0 +1,114 @@
+name: Continuous Integration and Delivery
+
+on: [push]
+
+env:
+    PROD_APP_IMAGE: ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')/prod_app
+    PROD_CELERY_IMAGE: ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')/prod_celery
+    PROD_DB_IMAGE: ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')/prod_db
+
+jobs:
+
+    
+    build-production:
+      name: Build Docker Images
+      runs-on: ubuntu-latest
+      if: github.ref == 'refs/heads/prod'
+      steps:
+        - name: Checkout master
+          uses: actions/checkout@v1
+        - name: Add environment variables to .env
+          run: |
+              echo NAMESPACE=${{ secrets.NAMESPACE }} >> .env
+              echo SECRET_KEY=${{ secrets.PROD_SECRET_KEY }} >> .env
+              echo DJANGO_ALLOWED_HOSTS=${{ secrets.PROD_DJANGO_ALLOWED_HOSTS }} >> .env
+              echo DB_ENGINE=${{ secrets.PROD_DB_ENGINE }} >> .env
+              echo DB_USER=${{ secrets.PROD_DB_USER }} >> .env
+              echo DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }} >> .env
+              echo DB_HOST=${{ secrets.PROD_DB_HOST }} >> .env
+              echo DB_NAME=${{ secrets.PROD_DB_NAME }} >> .env
+              echo DB_PORT=${{ secrets.PROD_DB_PORT }} >> .env
+    
+
+        - name: Set environment variables
+          run: |
+
+              echo "PROD_APP_IMAGE=$(echo ${{env.PROD_APP_IMAGE}} )" >> $GITHUB_ENV
+              echo "PROD_DB_IMAGE=$(echo ${{env.PROD_DB_IMAGE}} )" >> $GITHUB_ENV
+
+        - name: Log in to GitHub Packages
+          run: echo ${PERSONAL_ACCESS_TOKEN} | docker login ghcr.io -u ${{ secrets.NAMESPACE }} --password-stdin
+          env:
+            PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        - name: Pull images
+          run: |
+              docker pull ${{ env.PROD_DB_IMAGE }} || true
+              docker pull ${{ env.PROD_APP_IMAGE }} || true
+
+        - name: Build production images
+          run: |
+              docker-compose -f docker-compose.prod.cicd.yml build
+        - name: Push images
+          run: |
+              docker push ${{ env.PROD_APP_IMAGE }}
+              docker push ${{ env.PROD_DB_IMAGE }}
+
+
+    production:
+        name: Deploy to DigitalOcean Production
+        runs-on: ubuntu-latest
+        needs: build-production
+
+        if: github.ref == 'refs/heads/prod'
+        steps:
+          - name: Checkout main
+            uses: actions/checkout@v1
+          - name: Add environment variables to .env
+            run: |
+                echo NAMESPACE=${{ secrets.NAMESPACE }} >> .env
+                echo SECRET_KEY=${{ secrets.PROD_SECRET_KEY }} >> .env
+                echo DJANGO_ALLOWED_HOSTS=${{ secrets.PROD_DJANGO_ALLOWED_HOSTS }} >> .env
+                echo DB_ENGINE=${{ secrets.PROD_DB_ENGINE }} >> .env
+                echo DB_USER=${{ secrets.PROD_DB_USER }} >> .env
+                echo DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }} >> .env
+                echo DB_HOST=${{ secrets.PROD_DB_HOST }} >> .env
+                echo DB_NAME=${{ secrets.PROD_DB_NAME }} >> .env
+                echo DB_PORT=${{ secrets.PROD_DB_PORT }} >> .env
+                echo DOCKER_CONTAINER_EMAIL=${{ secrets.PROD_DOCKER_CONTAINER_EMAIL }} >> .env
+                echo DOCKER_CONTAINER_PASSWORD=${{ secrets.PROD_DOCKER_CONTAINER_PASSWORD }} >> .env
+     
+
+                echo APP_IMAGE=${{ env.PROD_APP_IMAGE }} >> .env
+                echo DB_IMAGE=${{ env.PROD_DB_IMAGE }} >> .env
+
+          - name: Add the private SSH key to the ssh-agent
+            env:
+              SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+            run: |
+                mkdir -p ~/.ssh
+                ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+                ssh-keyscan github.com >> ~/.ssh/known_hosts
+                ssh-add - <<< "${{ secrets.PROD_PRIVATE_KEY }}"
+          - name: Build and deploy images on DigitalOcean
+            env:
+                SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+            run: |
+                scp  -o StrictHostKeyChecking=no -r ./.env ./app/backend ./app/nginx ./docker-compose.prod.yml ./pg_init_prod.sql root@${{ secrets.PROD_IP_ADDRESS }}:/home/course
+                ssh -o StrictHostKeyChecking=no root@${{ secrets.PROD_IP_ADDRESS }} << 'ENDSSH'
+                    cd /home/course
+                    mv docker-compose.prod.yml docker-compose.yml
+                    cd backend
+                    mv manage.prod.py manage.py
+                    rm manage.stage.py
+                    cd course
+                    mv wsgi.prod.py wsgi.py
+                    rm wsgi.stage.py
+                    cd ../..
+                    source .env
+                    echo "${{secrets.PROD_CERT_PEM}}" > /etc/ssl/certs/cert.pem
+                    echo "${{secrets.PROD_CERT_KEY}}" > /etc/ssl/certs/key.pem
+                    echo ${{secrets.PERSONAL_ACCESS_TOKEN}} | docker login ghcr.io -u ${{ secrets.NAMESPACE }} --password-stdin
+                    docker pull $APP_IMAGE
+                    docker pull $DB_IMAGE
+                    docker-compose up -d --build
+                ENDSSH

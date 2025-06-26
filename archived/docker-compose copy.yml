@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres
+    networks:
+      - inside-network
+    container_name: db
+    restart: unless-stopped
+    volumes:
+      - pg:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_PORT=${DB_PORT}
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    networks:
+      - inside-network
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${DOCKER_CONTAINER_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${DOCKER_CONTAINER_PASSWORD}
+    restart: unless-stopped
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+
+  app:
+    build:
+      context: ./app/backend
+      dockerfile: docker/docker_files/Dockerfile
+    restart: unless-stopped
+    container_name: app
+    networks:
+      - inside-network
+    command: >
+      bash -c "dockerize -wait tcp://db:5432
+      && python manage.py makemigrations
+      && python manage.py migrate
+      && python manage.py test
+      && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./app/backend:/code
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+  stripe-cli:
+    image: stripe/stripe-cli
+    container_name: stripe-cli
+    networks:
+      - inside-network
+    env_file:
+      - .env
+    command: "listen --api-key ${STRIPE_SECRET} --device-name 'local' --forward-to app:8000/stripe-webhooks/"
+
+  redis:
+    image: redis:6-alpine
+    networks:
+      - inside-network
+    ports:
+      - "6379:6379"
+
+  worker:
+    restart: always
+    build:
+      context: ./app/backend
+      dockerfile: docker/docker_files/Dockerfile
+    networks:
+      - inside-network
+    command: celery -A course worker --loglevel=info --logfile=logs/celery.log
+    volumes:
+      - ./app/backend:/code
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - app
+
+  beat:
+    build:
+      context: ./app/backend
+      dockerfile: docker/docker_files/Dockerfile
+    networks:
+      - inside-network
+    command: celery -A course beat -l info
+    volumes:
+      - ./app/backend:/code
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - app
+
+
+  flower:
+    build:
+      context: ./app/backend
+      dockerfile: docker/docker_files/Dockerfile
+    networks:
+      - inside-network
+    command: celery -A course flower  --broker=${CELERY_BROKER}
+    ports:
+      - 5555:5555
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - app
+      - redis
+      - worker
+
+volumes:
+  pg:
+  pgadmin:
+
+networks:
+    inside-network:
+        driver: bridge
