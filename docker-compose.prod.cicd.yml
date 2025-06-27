@@ -2,21 +2,7 @@ version: '3'
 
 services:
 
-  db:
-    build:
-      context: ./app/backend
-      dockerfile: docker/docker_files/Dockerfile.db
-      cache_from:
-        - "${PROD_DB_IMAGE}"
-    image: "${PROD_DB_IMAGE}"
-    restart: unless-stopped
-    env_file:
-      - ./.env
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_PORT: ${DB_PORT}
+
 
   app:
     build:

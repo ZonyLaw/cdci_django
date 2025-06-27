@@ -4,8 +4,6 @@ on: [push]
 
 env:
     PROD_APP_IMAGE: ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')/prod_app
-    PROD_CELERY_IMAGE: ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')/prod_celery
-    PROD_DB_IMAGE: ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')/prod_db
 
 jobs:
 
@@ -20,30 +18,24 @@ jobs:
         - name: Add environment variables to .env
           run: |
               echo NAMESPACE=${{ secrets.NAMESPACE }} >> .env
-              echo SECRET_KEY=${{ secrets.PROD_SECRET_KEY }} >> .env
               echo DJANGO_ALLOWED_HOSTS=${{ secrets.PROD_DJANGO_ALLOWED_HOSTS }} >> .env
-              echo DB_ENGINE=${{ secrets.PROD_DB_ENGINE }} >> .env
-              echo DB_USER=${{ secrets.PROD_DB_USER }} >> .env
-              echo DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }} >> .env
-              echo DB_HOST=${{ secrets.PROD_DB_HOST }} >> .env
-              echo DB_NAME=${{ secrets.PROD_DB_NAME }} >> .env
-              echo DB_PORT=${{ secrets.PROD_DB_PORT }} >> .env
+          
     
 
         - name: Set environment variables
           run: |
 
               echo "PROD_APP_IMAGE=$(echo ${{env.PROD_APP_IMAGE}} )" >> $GITHUB_ENV
-              echo "PROD_DB_IMAGE=$(echo ${{env.PROD_DB_IMAGE}} )" >> $GITHUB_ENV
+
 
         - name: Log in to GitHub Packages
           run: echo "${PERSONAL_ACCESS_TOKEN}" | docker login ghcr.io -u "${{ secrets.NAMESPACE }}" --password-stdin
           env:
             PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-            NAMESPACE: ${{ secrets.NAMESPACE }}
+            
         - name: Pull images
           run: |
-              docker pull ${{ env.PROD_DB_IMAGE }} || true
+   
               docker pull ${{ env.PROD_APP_IMAGE }} || true
 
         - name: Build production images
@@ -52,7 +44,7 @@ jobs:
         - name: Push images
           run: |
               docker push ${{ env.PROD_APP_IMAGE }}
-              docker push ${{ env.PROD_DB_IMAGE }}
+  
 
 
     production:
@@ -69,18 +61,8 @@ jobs:
                 echo NAMESPACE=${{ secrets.NAMESPACE }} >> .env
                 echo SECRET_KEY=${{ secrets.PROD_SECRET_KEY }} >> .env
                 echo DJANGO_ALLOWED_HOSTS=${{ secrets.PROD_DJANGO_ALLOWED_HOSTS }} >> .env
-                echo DB_ENGINE=${{ secrets.PROD_DB_ENGINE }} >> .env
-                echo DB_USER=${{ secrets.PROD_DB_USER }} >> .env
-                echo DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }} >> .env
-                echo DB_HOST=${{ secrets.PROD_DB_HOST }} >> .env
-                echo DB_NAME=${{ secrets.PROD_DB_NAME }} >> .env
-                echo DB_PORT=${{ secrets.PROD_DB_PORT }} >> .env
-                echo DOCKER_CONTAINER_EMAIL=${{ secrets.PROD_DOCKER_CONTAINER_EMAIL }} >> .env
-                echo DOCKER_CONTAINER_PASSWORD=${{ secrets.PROD_DOCKER_CONTAINER_PASSWORD }} >> .env
-     
-
                 echo APP_IMAGE=${{ env.PROD_APP_IMAGE }} >> .env
-                echo DB_IMAGE=${{ env.PROD_DB_IMAGE }} >> .env
+   
 
           - name: Add the private SSH key to the ssh-agent
             env:
