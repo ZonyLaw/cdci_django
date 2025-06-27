@@ -37,9 +37,10 @@ jobs:
               echo "PROD_DB_IMAGE=$(echo ${{env.PROD_DB_IMAGE}} )" >> $GITHUB_ENV
 
         - name: Log in to GitHub Packages
-          run: echo ${PERSONAL_ACCESS_TOKEN} | docker login ghcr.io -u ${{ secrets.NAMESPACE }} --password-stdin
+          run: echo "${PERSONAL_ACCESS_TOKEN}" | docker login ghcr.io -u "${{ secrets.NAMESPACE }}" --password-stdin
           env:
             PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+            NAMESPACE: ${{ secrets.NAMESPACE }}
         - name: Pull images
           run: |
               docker pull ${{ env.PROD_DB_IMAGE }} || true
