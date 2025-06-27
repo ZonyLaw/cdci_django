@@ -22,7 +22,7 @@ jobs:
           
     
 
-        - name: Set environment variables
+        - name: Set environment variables2
           run: |
 
             #  echo "PROD_APP_IMAGE=$(echo ${{env.PROD_APP_IMAGE}} )" >> $GITHUB_ENV
