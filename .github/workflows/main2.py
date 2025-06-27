@@ -92,6 +92,5 @@ jobs:
                     echo "${{secrets.PROD_CERT_KEY}}" > /etc/ssl/certs/key.pem
                     echo ${{secrets.PERSONAL_ACCESS_TOKEN}} | docker login ghcr.io -u ${{ secrets.NAMESPACE }} --password-stdin
                     docker pull $APP_IMAGE
-                    docker pull $DB_IMAGE
                     docker-compose up -d --build
                 ENDSSH
