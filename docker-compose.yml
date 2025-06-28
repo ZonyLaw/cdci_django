@@ -11,8 +11,7 @@ services:
       - inside-network
     command: >
       python manage.py runserver 0.0.0.0:8000"
-   ##   bash -c "python manage.py makemigrations &&
-   ##   python manage.py migrate
+
     volumes:
       - ./app/backend:/code
     ports:
