@@ -6,8 +6,8 @@ services:
     image: "app_image"
     restart: unless-stopped
     command: >
-       bash -c "python manage.py makemigrations
-       && gunicorn -c gunicorn.conf.py --env DJANGO_SETTINGS_MODULE=course.conf.prod course.wsgi:application --bind 0.0.0.0:8000"
+       # bash -c "python manage.py makemigrations && 
+       gunicorn -c gunicorn.conf.py --env DJANGO_SETTINGS_MODULE=course.conf.prod course.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - ./backend:/code
       - /var/log/course:/code/logs
