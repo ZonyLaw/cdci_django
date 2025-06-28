@@ -25,16 +25,21 @@ jobs:
         - name: Set environment variables2
           run: |
 
-            echo "PROD_APP_IMAGE=$(echo ${{env.PROD_APP_IMAGE}} )" >> $GITHUB_ENV
+          #  echo "PROD_APP_IMAGE=$(echo ${{env.PROD_APP_IMAGE}} )" >> $GITHUB_ENV
 
-          #  IMAGE="ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')/prod_app:latest"
-          #  echo "PROD_APP_IMAGE=$IMAGE" >> $GITHUB_ENV
+            IMAGE="ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')/prod_app:latest"
+            echo "PROD_APP_IMAGE=$IMAGE" >> $GITHUB_ENV
 
         - name: Log in to GitHub Packages
           run: echo "${PERSONAL_ACCESS_TOKEN}" | docker login ghcr.io -u "${{ secrets.NAMESPACE }}" --password-stdin
           env:
             PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
             
+
+        - name: Show .env contents
+          run: cat .env
+
+          
         - name: Pull images
           run: |
    
