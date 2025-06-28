@@ -70,7 +70,8 @@ jobs:
                 echo NAMESPACE=${{ secrets.NAMESPACE }} >> .env
                 echo SECRET_KEY=${{ secrets.PROD_SECRET_KEY }} >> .env
                 echo DJANGO_ALLOWED_HOSTS=${{ secrets.PROD_DJANGO_ALLOWED_HOSTS }} >> .env
-                echo APP_IMAGE=${{ env.PROD_APP_IMAGE }} >> .env
+                echo APP_IMAGE=ghcr.io/${{ github.repository }}/prod_app:latest >> .env
+               # echo APP_IMAGE=${{ env.PROD_APP_IMAGE }} >> .env
    
 
           - name: Add the private SSH key to the ssh-agent
@@ -101,5 +102,6 @@ jobs:
                     echo "${{secrets.PROD_CERT_KEY}}" > /etc/ssl/certs/key.pem
                     echo ${{secrets.PERSONAL_ACCESS_TOKEN}} | docker login ghcr.io -u ${{ secrets.NAMESPACE }} --password-stdin
                     docker pull $APP_IMAGE
-                    docker-compose up -d --build
+                    docker compose up -d --build
+                    #docker-compose up -d --build
                 ENDSSH
