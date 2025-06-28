@@ -80,7 +80,7 @@ jobs:
                 echo NAMESPACE=${{ secrets.NAMESPACE }} >> .env
                 echo SECRET_KEY=${{ secrets.PROD_SECRET_KEY }} >> .env
                 echo DJANGO_ALLOWED_HOSTS=${{ secrets.PROD_DJANGO_ALLOWED_HOSTS }} >> .env
-                echo APP_IMAGE=ghcr.io/${{ github.repository }}/prod_app:latest >> .env
+                echo APP_IMAGE=ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')/prod_app:latest >> .env
                # echo APP_IMAGE=${{ env.PROD_APP_IMAGE }} >> .env
    
 
