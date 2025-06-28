@@ -15,8 +15,6 @@ services:
       - .env
     ports:
       - "8000:8000"
-    depends_on:
-      - db
     networks:
       - main_course_network
     container_name: app

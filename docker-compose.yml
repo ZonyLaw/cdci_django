@@ -6,13 +6,17 @@ services:
       context: ./app/backend
       dockerfile: docker/docker_files/Dockerfile
     restart: unless-stopped
+    container_name: app
+    networks:
+      - inside-network
     command: >
-      bash -c "python manage.py makemigrations
-      && python manage.py migrate
-      && python manage.py runserver 0.0.0.0:8000"
+      python manage.py runserver 0.0.0.0:8000"
+   ##   bash -c "python manage.py makemigrations &&
+   ##   python manage.py migrate
     volumes:
       - ./app/backend:/code
     ports:
       - 8000:8000
     env_file:
       - .env
+
