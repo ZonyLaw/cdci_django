@@ -12,7 +12,7 @@ services:
         - "${PROD_APP_IMAGE}"
     image: "${PROD_APP_IMAGE}"
     restart: unless-stopped
-    command: >
+    command: 
       gunicorn --env DJANGO_SETTINGS_MODULE=course.conf.prod course.wsgi.prod:application --bind 0.0.0.0:8000
     expose:
       - 8000

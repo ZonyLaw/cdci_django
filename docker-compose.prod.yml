@@ -5,8 +5,7 @@ services:
   app:
     image: "${APP_IMAGE}"
     restart: unless-stopped
-    command: >
-       
+    command: 
        gunicorn -c gunicorn.conf.py --env DJANGO_SETTINGS_MODULE=course.conf.prod course.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - ./backend:/code
