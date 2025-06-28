@@ -92,15 +92,16 @@ jobs:
                     mv docker-compose.prod.yml docker-compose.yml
                     cd backend
                     mv manage.prod.py manage.py
-                    rm manage.stage.py
+                #    rm manage.stage.py
                     cd course
                     mv wsgi.prod.py wsgi.py
-                    rm wsgi.stage.py
+                #    rm wsgi.stage.py
                     cd ../..
                     source .env
                     echo "${{secrets.PROD_CERT_PEM}}" > /etc/ssl/certs/cert.pem
                     echo "${{secrets.PROD_CERT_KEY}}" > /etc/ssl/certs/key.pem
                     echo ${{secrets.PERSONAL_ACCESS_TOKEN}} | docker login ghcr.io -u ${{ secrets.NAMESPACE }} --password-stdin
+                    echo "APP_IMAGE is: $APP_IMAGE"
                     docker pull $APP_IMAGE
                     docker compose up -d --build
                     #docker-compose up -d --build
