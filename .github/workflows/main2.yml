@@ -9,7 +9,7 @@ jobs:
 
     
     build-production:
-      name: Build Docker Images
+      name: Build Docker Images1
       runs-on: ubuntu-latest
       if: github.ref == 'refs/heads/prod'
       steps:
